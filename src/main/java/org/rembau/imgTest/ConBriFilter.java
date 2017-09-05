@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Random;
 
 public class ConBriFilter {
 
@@ -28,12 +29,39 @@ public class ConBriFilter {
 
             FileOutputStream output = null;
             output = new FileOutputStream(new File(dst));
+            filter = disturb(filter);
             ImageIO.write(filter, "jpg", output);
             output.flush();
             output.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static BufferedImage disturb(BufferedImage src) {
+        BufferedImage dest = new BufferedImage(src.getWidth(), src.getHeight(),
+                BufferedImage.TYPE_INT_RGB);
+
+        for (int row = 0;row < dest.getHeight();row++) {
+            for (int col = 0;col < dest.getWidth();col++) {
+                int destRow = 0;
+                int destCol = 0;
+                if (row >= 60) {
+                    destRow = row - 60;
+                } else {
+                    destRow = row + 60;
+                }
+
+                if (col >= 130) {
+                    destCol = col - 130;
+                } else {
+                    destCol = col + 130;
+                }
+//                System.out.println(destRow + " " + destCol);
+                dest.setRGB(destCol, destRow, src.getRGB(col, row));
+            }
+        }
+        return dest;
     }
 
     public static BufferedImage filter(BufferedImage src, BufferedImage dest, int x, int y, int width, int height) {
@@ -71,6 +99,7 @@ public class ConBriFilter {
         rgbmeans[1] = (int)(greenSum / total);
         rgbmeans[2] = (int)(blueSum / total);
 
+        Random random = new Random();
         // adjust contrast and brightness algorithm, here
         for(int row=0; row<imgHeight; row++) {
             int ta = 0, tr = 0, tg = 0, tb = 0;
@@ -78,31 +107,7 @@ public class ConBriFilter {
                 index = row * imgWidth + col;
 
                 if (row >= y && row < y + height && col >= x && col < x+width) {
-                    ta = (inPixels[index] >> 24) & 0xff;
-                    tr = (inPixels[index] >> 16) & 0xff;
-                    tg = (inPixels[index] >> 8) & 0xff;
-                    tb = inPixels[index] & 0xff;
-
-                    // remove means
-                    tr -= rgbmeans[0];
-                    tg -= rgbmeans[1];
-                    tb -= rgbmeans[2];
-
-                    // adjust contrast now !!!
-                    tr = (int) (tr * getContrast());
-                    tg = (int) (tg * getContrast());
-                    tb = (int) (tb * getContrast());
-
-                    // adjust brightness
-
-//                    float brightness = getBrightness();
-                    float brightness = getBrightness(x, y, width, height, col, row);
-                    System.out.println(row + " " + " " + col + " " + brightness);
-                    tr += (int) (rgbmeans[0] * brightness);
-                    tg += (int) (rgbmeans[1] * brightness);
-                    tb += (int) (rgbmeans[2] * brightness);
-
-                    outPixels[index] = (ta << 24) | (clamp(tr) << 16) | (clamp(tg) << 8) | clamp(tb);
+                    outPixels[index] = getOutPixel(x, y, width, height, inPixels, index, rgbmeans, row, col);
                 } else {
                     outPixels[index] = inPixels[index];
                 }
@@ -110,6 +115,38 @@ public class ConBriFilter {
         }
         dest.setRGB( 0, 0, imgWidth, imgHeight, outPixels, 0, imgWidth );
         return dest;
+    }
+
+    private static int getOutPixel(int x, int y, int width, int height, int[] inPixels, int index, int[] rgbmeans, int row, int col) {
+        int ta;
+        int tr;
+        int tg;
+        int tb;
+        ta = (inPixels[index] >> 24) & 0xff;
+        tr = (inPixels[index] >> 16) & 0xff;
+        tg = (inPixels[index] >> 8) & 0xff;
+        tb = inPixels[index] & 0xff;
+
+        // remove means
+        tr -= rgbmeans[0];
+        tg -= rgbmeans[1];
+        tb -= rgbmeans[2];
+
+        // adjust contrast now !!!
+        tr = (int) (tr * getContrast());
+        tg = (int) (tg * getContrast());
+        tb = (int) (tb * getContrast());
+
+        // adjust brightness
+
+//                    float brightness = getBrightness();
+        float brightness = getBrightness(x, y, width, height, col, row);
+//                    System.out.println(row + " " + " " + col + " " + brightness);
+        tr += (int) (rgbmeans[0] * brightness);
+        tg += (int) (rgbmeans[1] * brightness);
+        tb += (int) (rgbmeans[2] * brightness);
+
+        return (ta << 24) | (clamp(tr) << 16) | (clamp(tg) << 8) | clamp(tb);
     }
 
     public static int clamp(int value) {
@@ -140,7 +177,11 @@ public class ConBriFilter {
             xDistance = yDistance;
         }
 
-        if (xDistance > 5) {
+        if (xDistance < 0) {
+            xDistance = -xDistance;
+        }
+
+        if (xDistance > margin) {
             xBrightness = _brightness;
         } else {
             xBrightness = brightness + (distance/margin)*xDistance;
