@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public class GrayTest {
     public void binaryImage() throws IOException {
-        File file = new File("C:\\Users\\youyue\\Desktop\\tem\\htmltest\\yanzhengma\\5E9FE032887E5DBD7D4362044DDFE30C_hei_162yzm1.jpg");
+        File file = new File("C:\\Users\\youyue\\Desktop\\tem\\htmltest\\yanzhengma\\yzm2_findOffset1.jpg");
         BufferedImage image = ImageIO.read(file);
 
         int width = image.getWidth();
@@ -21,7 +21,7 @@ public class GrayTest {
             }
         }
 
-        File newFile = new File("C:\\Users\\youyue\\Desktop\\tem\\htmltest\\yanzhengma\\5E9FE032887E5DBD7D4362044DDFE30C_hei_162yzm1_b.jpg");
+        File newFile = new File("C:\\Users\\youyue\\Desktop\\tem\\htmltest\\yanzhengma\\yzm2_findOffset1_b.jpg");
         ImageIO.write(grayImage, "jpg", newFile);
     }
 

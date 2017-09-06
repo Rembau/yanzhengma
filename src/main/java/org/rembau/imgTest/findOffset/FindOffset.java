@@ -1,4 +1,4 @@
-package org.rembau.imgTest;
+package org.rembau.imgTest.findOffset;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
